@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/envsurf.svg)](https://pypi.org/project/envsurf/)
 [![Python](https://img.shields.io/pypi/pyversions/envsurf.svg)](https://pypi.org/project/envsurf/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-57%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-62%20passing-brightgreen.svg)]()
 
 ## Why?
 
@@ -133,7 +133,23 @@ Returns structured JSON with all findings — perfect for CI pipelines, editors,
 |---------|-------------|
 | `envsurf` (or `envsurf scan`) | Scan .env files for drift, extras, and secrets |
 | `envsurf fix` | Generate/update .env from .env.example |
+| `envsurf diff` | Compare two .env files (staging vs production) |
 | `envsurf init` | Generate .env.example from source code |
+
+### Compare environments
+
+```bash
+# Compare staging vs production .env files
+envsurf diff .env.staging .env.production
+
+# JSON output
+envsurf diff .env.staging .env.production --json
+```
+
+Shows variables that are:
+- **Only in A** — defined in first file but not second
+- **Only in B** — defined in second file but not first
+- **Value differences** — same key, different values
 
 ## Configuration
 
@@ -152,6 +168,12 @@ pytest
 ```
 
 ## Changelog
+
+### v0.3.0
+- **`envsurf diff`** — compare two arbitrary .env files (staging vs production, etc.)
+- **Dockerfile ENV scanning** — detects `ENV KEY=value` in Dockerfiles
+- **Bug fix**: removed duplicate Go `os.Getenv` regex with wrong closing bracket
+- 62 tests passing
 
 ### v0.2.0
 - **`envsurf fix`** — auto-generate .env from .env.example with TODO placeholders

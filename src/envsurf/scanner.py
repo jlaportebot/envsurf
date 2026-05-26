@@ -18,9 +18,8 @@ _ENV_PATTERNS: list[re.Pattern[str]] = [
     # Ruby: ENV["KEY"], ENV.fetch("KEY")
     re.compile(r"""ENV\[["'](\w+)["']\]"""),
     re.compile(r"""ENV\.fetch\(["'](\w+)["']"""),
-    # Go: os.Getenv("KEY")
-    re.compile(r"""os\.Getenv\(["'](\w+)["']\]"""),
-    re.compile(r"""os\.Getenv\(["'](\w+)["']\)"""),
+ # Go: os.Getenv("KEY")
+ re.compile(r"""os\.Getenv\(["'](\w+)["']\)"""),
     # Rust: env!("KEY"), std::env::var("KEY")
     re.compile(r"""(?:env!|std::env::var)\(["'](\w+)["']\)"""),
     # Shell: $KEY, ${KEY}
@@ -32,8 +31,10 @@ _ENV_PATTERNS: list[re.Pattern[str]] = [
     # PHP: getenv('KEY'), $_ENV['KEY']
     re.compile(r"""getenv\(["'](\w+)["']\)"""),
     re.compile(r"""\$_ENV\[['"](\w+)['"]\]"""),
-    # C# / .NET: Environment.GetEnvironmentVariable("KEY")
-    re.compile(r"""Environment\.GetEnvironmentVariable\(["'](\w+)["']\)"""),
+ # C# / .NET: Environment.GetEnvironmentVariable("KEY")
+ re.compile(r"""Environment\.GetEnvironmentVariable\(["'](\w+)["']\)"""),
+ # Dockerfile: ENV KEY=value, ENV KEY=value
+ re.compile(r"""^[\t ]*ENV[\t ]+([A-Za-z_]\w*)=""", re.MULTILINE),
 ]
 
 # Directories and file extensions to skip

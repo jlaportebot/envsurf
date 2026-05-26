@@ -59,3 +59,37 @@ def compare_env_files(env_path: Path, example_path: Path, *, check_secrets: bool
             result.secret_findings.extend(findings)
 
     return result
+
+
+@dataclass
+class EnvDiff:
+    """Diff between two arbitrary .env files (e.g., staging vs production)."""
+
+    only_in_a: List[str] = field(default_factory=list)
+    only_in_b: List[str] = field(default_factory=list)
+    value_differences: List[tuple[str, str, str]] = field(default_factory=list)  # (key, val_a, val_b)
+
+    @property
+    def is_clean(self) -> bool:
+        return not self.only_in_a and not self.only_in_b and not self.value_differences
+
+
+def diff_env_files(path_a: Path, path_b: Path) -> EnvDiff:
+    """Compare two .env files and report key/value differences."""
+    file_a = parse_env(path_a)
+    file_b = parse_env(path_b)
+
+    diff = EnvDiff()
+    diff.only_in_a = sorted(file_a.keys - file_b.keys)
+    diff.only_in_b = sorted(file_b.keys - file_a.keys)
+
+    common = file_a.keys & file_b.keys
+    for key in sorted(common):
+        val_a = file_a.get(key)
+        val_b = file_b.get(key)
+        raw_a = val_a.raw_value if val_a else ""
+        raw_b = val_b.raw_value if val_b else ""
+        if raw_a != raw_b:
+            diff.value_differences.append((key, raw_a, raw_b))
+
+    return diff

@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from .compare import compare_env_files
+from .compare import compare_env_files, diff_env_files
 from .parser import parse_env
 from .scanner import scan_source
 from .secrets import detect_secrets
@@ -265,6 +265,63 @@ def _cmd_init(args) -> None:
         print(f"   • {key}")
 
 
+def _cmd_diff(args) -> None:
+    """Compare two arbitrary .env files and show differences."""
+    path_a = Path(args.file_a)
+    path_b = Path(args.file_b)
+
+    if not path_a.exists():
+        print(f"{_RED}Error: {path_a} not found{_RESET}")
+        sys.exit(1)
+    if not path_b.exists():
+        print(f"{_RED}Error: {path_b} not found{_RESET}")
+        sys.exit(1)
+
+    diff = diff_env_files(path_a, path_b)
+
+    if args.json:
+        data = {
+            "file_a": str(path_a),
+            "file_b": str(path_b),
+            "only_in_a": diff.only_in_a,
+            "only_in_b": diff.only_in_b,
+            "value_differences": [
+                {"key": k, "value_a": va, "value_b": vb}
+                for k, va, vb in diff.value_differences
+            ],
+        }
+        print(json.dumps(data, indent=2))
+        return
+
+    print(f"{_CYAN}{_BOLD}envsurf diff — comparing .env files{_RESET}\n")
+    print(f"  {_DIM}{path_a}{_RESET}")
+    print(f"  {_DIM}{path_b}{_RESET}\n")
+
+    if diff.is_clean:
+        print(f"{_GREEN}✓ No differences — files are equivalent{_RESET}")
+        return
+
+    if diff.only_in_a:
+        print(f" {_YELLOW}Only in {path_a.name}:{_RESET}")
+        for key in diff.only_in_a:
+            print(f"   • {key}")
+
+    if diff.only_in_b:
+        print(f" {_YELLOW}Only in {path_b.name}:{_RESET}")
+        for key in diff.only_in_b:
+            print(f"   • {key}")
+
+    if diff.value_differences:
+        print(f" {_RED}Value differences:{_RESET}")
+        for key, val_a, val_b in diff.value_differences:
+            print(f"   • {key}:")
+            print(f"     {_DIM}{path_a.name}: {val_a!r}{_RESET}")
+            print(f"     {_DIM}{path_b.name}: {val_b!r}{_RESET}")
+
+    total = len(diff.only_in_a) + len(diff.only_in_b) + len(diff.value_differences)
+    print(f"\n {_YELLOW}{total} difference(s) found{_RESET}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(
@@ -298,6 +355,12 @@ def _build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument("--force", action="store_true", help="Overwrite existing .env.example")
     init_parser.add_argument("--dry-run", action="store_true", help="Show what would be generated without writing")
 
+    # ── diff ──
+    diff_parser = subparsers.add_parser("diff", help="Compare two .env files (e.g., staging vs production)")
+    diff_parser.add_argument("file_a", type=Path, help="First .env file")
+    diff_parser.add_argument("file_b", type=Path, help="Second .env file")
+    diff_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
     return parser
 
 
@@ -308,7 +371,7 @@ def main(argv: list[str] | None = None) -> None:
     # Pre-process argv: if no subcommand, insert "scan" and map top-level flags
     if argv is not None and len(argv) > 0:
         first = argv[0]
-        if first not in ("scan", "fix", "init") and not first.startswith("-"):
+        if first not in ("scan", "fix", "init", "diff") and not first.startswith("-"):
             # Positional arg without subcommand → default to scan
             argv = ["scan"] + list(argv)
         elif first.startswith("-") and first != "--version":
@@ -323,6 +386,9 @@ def main(argv: list[str] | None = None) -> None:
         return
     elif args.command == "init":
         _cmd_init(args)
+        return
+    elif args.command == "diff":
+        _cmd_diff(args)
         return
     elif args.command == "scan" or args.command is None:
         # Default to scan

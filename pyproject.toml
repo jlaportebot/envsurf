@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "envsurf"
-version = "0.2.0"
+version = "0.3.0"
 description = "Scan .env files against .env.example — detect missing vars, extras, and leaked secrets"
 readme = "README.md"
 license = "MIT"
